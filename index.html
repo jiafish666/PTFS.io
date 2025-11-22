@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>联机虚拟钱包 - 多人转账与账单记录</title>
+    <style>
+        :root {
+            --primary: #4a6fa5;
+            --secondary: #6b8cbc;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --dev: #6f42c1;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo i {
+            font-size: 2rem;
+        }
+        
+        .online-users {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .online-indicator {
+            width: 10px;
+            height: 10px;
+            background-color: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn i {
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+        
+        .btn-info {
+            background-color: var(--info);
+            color: white;
+        }
+        
+        .btn-dev {
+            background-color: var(--dev);
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-header i {
+            color: var(--primary);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+        
+        .user-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.3s ease;
+        }
+        
+        .user-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .user-item:last-child {
+            border-bottom: none;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-name {
+            font-weight: 500;
+        }
+        
+        .user-status {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .transaction-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.3s ease;
+        }
+        
+        .transaction-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .transaction-item.income {
+            border-left: 4px solid var(--success);
+        }
+        
+        .transaction-item.expense {
+            border-left: 4px solid var(--danger);
+        }
+        
+        .transaction-amount {
+            font-weight: bold;
+        }
+        
+        .transaction-amount.income {
+            color: var(--success);
+        }
+        
+        .transaction-amount.expense {
+            color: var(--danger);
+        }
+        
+        .balance {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .balance.positive {
+            color: var(--success);
+        }
+        
+        .balance.negative {
+            color: var(--danger);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .active-user {
+            background-color: #e9f5ff;
+            font-weight: bold;
+        }
+        
+        .online-badge {
+            background-color: var(--success);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .stat-income {
+            color: var(--success);
+        }
+        
+        .stat-expense {
+            color: var(--danger);
+        }
+        
+        .stat-total {
+            color: var(--primary);
+        }
+        
+        /* 开发者面板样式 */
+        .dev-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            z-index: 1000;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .dev-panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .dev-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .dev-section:last-child {
+            border-bottom: none;
+        }
+        
+        .dev-section h3 {
+            margin-bottom: 10px;
+            color: var(--dev);
+        }
+        
+        .dev-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .dev-info {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+        
+        .notification.error {
+            border-left: 4px solid var(--danger);
+        }
+        
+        .notification.info {
+            border-left: 4px solid var(--info);
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .dev-panel {
+                width: 95%;
+                padding: 15px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-wallet"></i>
+                    <span>联机虚拟钱包</span>
+                </div>
+                <div class="online-users">
+                    <div class="online-indicator"></div>
+                    <span>在线用户: <span id="onlineCount">0</span></span>
+                </div>
+                <div class="nav-buttons">
+                    <button id="loginBtn" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>登录</span>
+                    </button>
+                    <button id="registerBtn" class="btn btn-secondary">
+                        <i class="fas fa-user-plus"></i>
+                        <span>注册</span>
+                    </button>
+                    <button id="logoutBtn" class="btn btn-danger hidden">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>退出</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- 登录/注册表单 -->
+        <div id="authSection" class="card">
+            <div class="card-header">
+                <span><i class="fas fa-user-circle"></i> 用户认证</span>
+            </div>
+            <div id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername"><i class="fas fa-user"></i> 用户名</label>
+                    <input type="text" id="loginUsername" class="form-control" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword"><i class="fas fa-lock"></i> 密码</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="请输入密码">
+                </div>
+                <button id="doLogin" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>登录</span>
+                </button>
+                <p style="margin-top: 15px;">还没有账户？<a href="#" id="showRegister">点击注册</a></p>
+            </div>
+            
+            <div id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label for="registerUsername"><i class="fas fa-user"></i> 用户名</label>
+                    <input type="text" id="registerUsername" class="form-control" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword"><i class="fas fa-lock"></i> 密码</label>
+                    <input type="password" id="registerPassword" class="form-control" placeholder="请输入密码">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword"><i class="fas fa-lock"></i> 确认密码</label>
+                    <input type="password" id="confirmPassword" class="form-control" placeholder="请再次输入密码">
+                </div>
+                <button id="doRegister" class="btn btn-success">
+                    <i class="fas fa-user-plus"></i>
+                    <span>注册</span>
+                </button>
+                <p style="margin-top: 15px;">已有账户？<a href="#" id="showLogin">点击登录</a></p>
+            </div>
+        </div>
+
+        <!-- 主应用界面 -->
+        <div id="appSection" class="hidden">
+            <!-- 统计信息 -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-label">总余额</div>
+                    <div class="stat-value stat-total" id="totalBalance">¥ 0.00</div>
+                    <div class="stat-label">所有用户余额总和</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">总收入</div>
+                    <div class="stat-value stat-income" id="totalIncome">¥ 0.00</div>
+                    <div class="stat-label">本月收入总额</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">总支出</div>
+                    <div class="stat-value stat-expense" id="totalExpense">¥ 0.00</div>
+                    <div class="stat-label">本月支出总额</div>
+                </div>
+            </div>
+            
+            <div class="main-content">
+                <!-- 左侧面板 -->
+                <div>
+                    <!-- 用户信息卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-user"></i> 账户信息</span>
+                        </div>
+                        <div id="userInfo">
+                            <div class="user-info">
+                                <div class="user-avatar" id="userAvatar">U</div>
+                                <div class="user-details">
+                                    <div class="user-name" id="currentUsername">用户名</div>
+                                    <div class="user-status">在线 <span class="online-badge">活跃</span></div>
+                                </div>
+                            </div>
+                            <div class="balance positive" id="currentBalance">¥ 0.00</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户列表卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-users"></i> 用户列表</span>
+                            <span class="online-badge" id="userCount">0</span>
+                        </div>
+                        <ul id="userList" class="user-list">
+                            <!-- 用户列表将通过JavaScript动态生成 -->
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- 右侧面板 -->
+                <div>
+                    <!-- 转账卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-exchange-alt"></i> 转账</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="recipient"><i class="fas fa-user-friends"></i> 收款人</label>
+                            <select id="recipient" class="form-control">
+                                <option value="">请选择收款人</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="amount"><i class="fas fa-money-bill-wave"></i> 金额 (¥)</label>
+                            <input type="number" id="amount" class="form-control" placeholder="请输入转账金额" min="0.01" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="description"><i class="fas fa-sticky-note"></i> 备注</label>
+                            <input type="text" id="description" class="form-control" placeholder="请输入转账备注">
+                        </div>
+                        <button id="doTransfer" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>确认转账</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 交易记录卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-history"></i> 交易记录</span>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="searchTransaction" class="form-control" placeholder="搜索交易记录">
+                        </div>
+                        <ul id="transactionList" class="transaction-list">
+                            <!-- 交易记录将通过JavaScript动态生成 -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 开发者面板 -->
+    <div id="devPanel" class="dev-panel hidden">
+        <div class="card-header">
+            <span><i class="fas fa-tools"></i> 开发者选项</span>
+        </div>
+        
+        <div class="dev-section">
+            <h3><i class="fas fa-coins"></i> 用户余额管理</h3>
+            <div class="form-group">
+                <label for="devUserSelect">选择用户</label>
+                <select id="devUserSelect" class="form-control">
+                    <option value="">请选择用户</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="devBalanceInput">设置余额 (¥)</label>
+                <input type="number" id="devBalanceInput" class="form-control" placeholder="输入新的余额">
+            </div>
+            <div class="dev-actions">
+                <button id="devSetBalance" class="btn btn-dev">设置余额</button>
+                <button id="devAddBalance" class="btn btn-success">增加余额</button>
+                <button id="devResetAllBalances" class="btn btn-warning">重置所有余额</button>
+            </div>
+        </div>
+        
+        <div class="dev-section">
+            <h3><i class="fas fa-exchange-alt"></i> 交易记录管理</h3>
+            <div class="form-group">
+                <label for="devTransactionCount">生成交易记录数量</label>
+                <input type="number" id="devTransactionCount" class="form-control" placeholder="输入交易记录数量" min="1" max="100">
+            </div>
+            <div class="dev-actions">
+                <button id="devGenerateTransactions" class="btn btn-dev">生成交易记录</button>
+                <button id="devClearTransactions" class="btn btn-danger">清除所有交易记录</button>
+            </div>
+            <div class="dev-info">
+                生成随机交易记录，包括当前用户与其他用户之间的转账。
+            </div>
+        </div>
+        
+        <div class="dev-section">
+            <h3><i class="fas fa-database"></i> 数据管理</h3>
+            <div class="dev-actions">
+                <button id="devExportData" class="btn btn-secondary">导出数据</button>
+                <button id="devImportData" class="btn btn-secondary">导入数据</button>
+                <button id="devResetAllData" class="btn btn-danger">重置所有数据</button>
+            </div>
+            <div class="dev-info">
+                导出/导入应用数据，或重置所有数据到初始状态。
+            </div>
+        </div>
+        
+        <div class="dev-actions">
+            <button id="devClosePanel" class="btn btn-primary">关闭面板</button>
+        </div>
+    </div>
+    
+    <div id="devPanelOverlay" class="dev-panel-overlay hidden"></div>
+
+    <!-- 通知 -->
+    <div id="notification" class="notification hidden">
+        <i class="fas fa-info-circle"></i>
+        <span id="notificationText">这是一条通知</span>
+    </div>
+
+    <script>
+        // 应用状态管理
+        const DATA_VERSION = '1.0';
+        const AppState = {
+            currentUser: null,
+            users: JSON.parse(localStorage.getItem('walletUsers')) || [],
+            transactions: JSON.parse(localStorage.getItem('walletTransactions')) || [],
+            onlineUsers: JSON.parse(localStorage.getItem('onlineUsers')) || []
+        };
+
+        // 防止重复操作
+        let isProcessing = false;
+
+        // 模拟服务器数据（在实际应用中，这里应该是与服务器的API通信）
+        const ServerMock = {
+            // 模拟用户注册
+            registerUser: function(username, password) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        try {
+                            // 检查用户名是否已存在
+                            if (AppState.users.find(u => u.username === username)) {
+                                resolve({ success: false, message: '用户名已存在' });
+                                return;
+                            }
+                            
+                            const newUser = {
+                                id: Date.now(),
+                                username,
+                                password,
+                                balance: 1000,
+                                lastActive: new Date(),
+                                isOnline: true
+                            };
+                            
+                            AppState.users.push(newUser);
+                            AppState.onlineUsers.push(newUser.id);
+                            saveData();
+                            
+                            resolve({ success: true, user: newUser });
+                        } catch (error) {
+                            console.error('注册过程中出错:', error);
+                            resolve({ success: false, message: '注册过程中发生错误' });
+                        }
+                    }, 500);
+                });
+            },
+            
+            // 模拟用户登录
+            loginUser: function(username, password) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        try {
+                            const user = AppState.users.find(u => u.username === username && u.password === password);
+                            
+                            if (user) {
+                                user.lastActive = new Date();
+                                user.isOnline = true;
+                                
+                                if (!AppState.onlineUsers.includes(user.id)) {
+                                    AppState.onlineUsers.push(user.id);
+                                }
+                                
+                                saveData();
+                                resolve({ success: true, user });
+                            } else {
+                                resolve({ success: false, message: '用户名或密码错误' });
+                            }
+                        } catch (error) {
+                            console.error('登录过程中出错:', error);
+                            resolve({ success: false, message: '登录过程中发生错误' });
+                        }
+                    }, 500);
+                });
+            },
+            
+            // 模拟用户登出
+            logoutUser: function(userId) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        try {
+                            const user = AppState.users.find(u => u.id === userId);
+                            if (user) {
+                                user.isOnline = false;
+                                user.lastActive = new Date();
+                            }
+                            
+                            AppState.onlineUsers = AppState.onlineUsers.filter(id => id !== userId);
+                            saveData();
+                            
+                            resolve({ success: true });
+                        } catch (error) {
+                            console.error('登出过程中出错:', error);
+                            resolve({ success: false, message: '登出过程中发生错误' });
+                        }
+                    }, 300);
+                });
+            },
+            
+            // 模拟转账
+            transferMoney: function(fromUserId, toUserId, amount, description) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        try {
+                            const fromUser = AppState.users.find(u => u.id === fromUserId);
+                            const toUser = AppState.users.find(u => u.id === toUserId);
+                            
+                            if (!fromUser || !toUser) {
+                                resolve({ success: false, message: '用户不存在' });
+                                return;
+                            }
+                            
+                            if (fromUser.balance < amount) {
+                                resolve({ success: false, message: '余额不足' });
+                                return;
+                            }
+                            
+                            // 更新余额
+                            fromUser.balance -= amount;
+                            toUser.balance += amount;
+                            
+                            // 记录交易
+                            const transaction = {
+                                id: Date.now(),
+                                fromUserId,
+                                toUserId,
+                                amount,
+                                description,
+                                timestamp: new Date()
+                            };
+                            
+                            AppState.transactions.push(transaction);
+                            saveData();
+                            
+                            resolve({ success: true, transaction });
+                        } catch (error) {
+                            console.error('转账过程中出错:', error);
+                            resolve({ success: false, message: '转账过程中发生错误' });
+                        }
+                    }, 800);
+                });
+            },
+            
+            // 模拟获取在线用户
+            getOnlineUsers: function() {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        try {
+                            // 模拟用户随机上线/下线
+                            if (Math.random() > 0.7 && AppState.users.length > 0) {
+                                const randomUser = AppState.users[Math.floor(Math.random() * AppState.users.length)];
+                                if (!AppState.onlineUsers.includes(randomUser.id)) {
+                                    AppState.onlineUsers.push(randomUser.id);
+                                    randomUser.isOnline = true;
+                                }
+                            }
+                            
+                            if (Math.random() > 0.8 && AppState.onlineUsers.length > 0) {
+                                const randomIndex = Math.floor(Math.random() * AppState.onlineUsers.length);
+                                const offlineUserId = AppState.onlineUsers[randomIndex];
+                                AppState.onlineUsers.splice(randomIndex, 1);
+                                
+                                const offlineUser = AppState.users.find(u => u.id === offlineUserId);
+                                if (offlineUser) {
+                                    offlineUser.isOnline = false;
+                                }
+                            }
+                            
+                            saveData();
+                            resolve(AppState.onlineUsers);
+                        } catch (error) {
+                            console.error('获取在线用户时出错:', error);
+                            resolve(AppState.onlineUsers);
+                        }
+                    }, 1000);
+                });
+            }
+        };
+
+        // DOM 元素引用
+        const elements = {
+            authSection: document.getElementById('authSection'),
+            appSection: document.getElementById('appSection'),
+            loginForm: document.getElementById('loginForm'),
+            registerForm: document.getElementById('registerForm'),
+            loginBtn: document.getElementById('loginBtn'),
+            registerBtn: document.getElementById('registerBtn'),
+            logoutBtn: document.getElementById('logoutBtn'),
+            doLogin: document.getElementById('doLogin'),
+            doRegister: document.getElementById('doRegister'),
+            showRegister: document.getElementById('showRegister'),
+            showLogin: document.getElementById('showLogin'),
+            currentUsername: document.getElementById('currentUsername'),
+            currentBalance: document.getElementById('currentBalance'),
+            userAvatar: document.getElementById('userAvatar'),
+            userList: document.getElementById('userList'),
+            recipient: document.getElementById('recipient'),
+            amount: document.getElementById('amount'),
+            description: document.getElementById('description'),
+            doTransfer: document.getElementById('doTransfer'),
+            transactionList: document.getElementById('transactionList'),
+            searchTransaction: document.getElementById('searchTransaction'),
+            onlineCount: document.getElementById('onlineCount'),
+            userCount: document.getElementById('userCount'),
+            totalBalance: document.getElementById('totalBalance'),
+            totalIncome: document.getElementById('totalIncome'),
+            totalExpense: document.getElementById('totalExpense'),
+            // 开发者面板元素
+            devPanel: document.getElementById('devPanel'),
+            devPanelOverlay: document.getElementById('devPanelOverlay'),
+            devUserSelect: document.getElementById('devUserSelect'),
+            devBalanceInput: document.getElementById('devBalanceInput'),
+            devSetBalance: document.getElementById('devSetBalance'),
+            devAddBalance: document.getElementById('devAddBalance'),
+            devResetAllBalances: document.getElementById('devResetAllBalances'),
+            devTransactionCount: document.getElementById('devTransactionCount'),
+            devGenerateTransactions: document.getElementById('devGenerateTransactions'),
+            devClearTransactions: document.getElementById('devClearTransactions'),
+            devExportData: document.getElementById('devExportData'),
+            devImportData: document.getElementById('devImportData'),
+            devResetAllData: document.getElementById('devResetAllData'),
+            devClosePanel: document.getElementById('devClosePanel'),
+            // 通知元素
+            notification: document.getElementById('notification'),
+            notificationText: document.getElementById('notificationText')
+        };
+
+        // 初始化应用
+        function initApp() {
+            // 检查是否有已登录用户
+            try {
+                const savedUser = localStorage.getItem('currentUser');
+                if (savedUser) {
+                    AppState.currentUser = JSON.parse(savedUser);
+                    // 验证用户数据完整性
+                    if (!AppState.currentUser.id || !AppState.currentUser.username) {
+                        throw new Error('用户数据损坏');
+                    }
+                    showApp();
+                } else {
+                    showAuth();
+                }
+            } catch (error) {
+                console.error('初始化应用时出错:', error);
+                localStorage.removeItem('currentUser');
+                showAuth();
+            }
+
+            // 绑定事件监听器
+            bindEvents();
+            
+            // 更新用户界面
+            updateUI();
+            
+            // 开始定期更新在线用户
+            setInterval(updateOnlineUsers, 5000);
+        }
+
+        // 绑定事件监听器
+        function bindEvents() {
+            elements.loginBtn.addEventListener('click', showAuth);
+            elements.registerBtn.addEventListener('click', showRegisterForm);
+            elements.logoutBtn.addEventListener('click', logout);
+            elements.doLogin.addEventListener('click', login);
+            elements.doRegister.addEventListener('click', register);
+            elements.showRegister.addEventListener('click', showRegisterForm);
+            elements.showLogin.addEventListener('click', showLoginForm);
+            elements.doTransfer.addEventListener('click', transfer);
+            elements.searchTransaction.addEventListener('input', filterTransactions);
+            
+            // 开发者面板事件
+            elements.devSetBalance.addEventListener('click', setUserBalance);
+            elements.devAddBalance.addEventListener('click', addUserBalance);
+            elements.devResetAllBalances.addEventListener('click', resetAllBalances);
+            elements.devGenerateTransactions.addEventListener('click', generateTransactions);
+            elements.devClearTransactions.addEventListener('click', clearTransactions);
+            elements.devExportData.addEventListener('click', exportData);
+            elements.devImportData.addEventListener('click', importData);
+            elements.devResetAllData.addEventListener('click', resetAllData);
+            elements.devClosePanel.addEventListener('click', hideDevPanel);
+            elements.devPanelOverlay.addEventListener('click', hideDevPanel);
+            
+            // 键盘快捷键监听
+            document.addEventListener('keydown', handleKeydown);
+        }
+
+        // 处理键盘快捷键
+        function handleKeydown(e) {
+            // Ctrl+Shift+D 打开开发者面板
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                toggleDevPanel();
+            }
+        }
+
+        // 显示/隐藏开发者面板
+        function toggleDevPanel() {
+            if (elements.devPanel.classList.contains('hidden')) {
+                showDevPanel();
+            } else {
+                hideDevPanel();
+            }
+        }
+
+        // 显示开发者面板
+        function showDevPanel() {
+            elements.devPanel.classList.remove('hidden');
+            elements.devPanelOverlay.classList.remove('hidden');
+            updateDevPanel();
+        }
+
+        // 隐藏开发者面板
+        function hideDevPanel() {
+            elements.devPanel.classList.add('hidden');
+            elements.devPanelOverlay.classList.add('hidden');
+        }
+
+        // 更新开发者面板
+        function updateDevPanel() {
+            // 更新用户选择下拉框
+            elements.devUserSelect.innerHTML = '<option value="">请选择用户</option>';
+            
+            AppState.users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.username} (¥ ${user.balance.toFixed(2)})`;
+                elements.devUserSelect.appendChild(option);
+            });
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            elements.notificationText.textContent = message;
+            elements.notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                elements.notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 更新在线用户
+        function updateOnlineUsers() {
+            ServerMock.getOnlineUsers().then(onlineUserIds => {
+                // 更新在线用户数量
+                elements.onlineCount.textContent = onlineUserIds.length;
+                
+                // 更新用户列表中的在线状态
+                updateUserList();
+            });
+        }
+
+        // 设置用户余额
+        function setUserBalance() {
+            const userId = parseInt(elements.devUserSelect.value);
+            const balance = parseFloat(elements.devBalanceInput.value);
+            
+            if (!userId) {
+                showNotification('请选择用户', 'error');
+                return;
+            }
+            
+            if (isNaN(balance) || balance < 0) {
+                showNotification('请输入有效的余额', 'error');
+                return;
+            }
+            
+            const user = AppState.users.find(u => u.id === userId);
+            if (user) {
+                user.balance = balance;
+                saveData();
+                updateUI();
+                updateDevPanel();
+                showNotification(`已设置 ${user.username} 的余额为 ¥ ${balance.toFixed(2)}`, 'success');
+            }
+        }
+
+        // 增加用户余额
+        function addUserBalance() {
+            const userId = parseInt(elements.devUserSelect.value);
+            const amount = parseFloat(elements.devBalanceInput.value);
+            
+            if (!userId) {
+                showNotification('请选择用户', 'error');
+                return;
+            }
+            
+            if (isNaN(amount)) {
+                showNotification('请输入有效的金额', 'error');
+                return;
+            }
+            
+            const user = AppState.users.find(u => u.id === userId);
+            if (user) {
+                user.balance += amount;
+                saveData();
+                updateUI();
+                updateDevPanel();
+                showNotification(`已为 ${user.username} 增加 ¥ ${amount.toFixed(2)}，当前余额为 ¥ ${user.balance.toFixed(2)}`, 'success');
+            }
+        }
+
+        // 重置所有用户余额
+        function resetAllBalances() {
+            if (confirm('确定要重置所有用户的余额吗？')) {
+                AppState.users.forEach(user => {
+                    user.balance = 1000; // 重置为默认余额
+                });
+                saveData();
+                updateUI();
+                updateDevPanel();
+                showNotification('已重置所有用户余额', 'success');
+            }
+        }
+
+        // 生成交易记录
+        function generateTransactions() {
+            const count = parseInt(elements.devTransactionCount.value);
+            
+            if (isNaN(count) || count < 1 || count > 100) {
+                showNotification('请输入有效的交易记录数量（1-100）', 'error');
+                return;
+            }
+            
+            if (!AppState.currentUser) {
+                showNotification('请先登录', 'error');
+                return;
+            }
+            
+            const descriptions = [
+                '午餐费用', '晚餐费用', '咖啡费用', '电影票', '购物消费',
+                '交通费用', '水电费', '房租', '礼物', '旅游费用',
+                '学习资料', '电子产品', '服装', '健身会员', '医疗费用'
+            ];
+            
+            for (let i = 0; i < count; i++) {
+                // 随机选择其他用户
+                const otherUsers = AppState.users.filter(u => u.id !== AppState.currentUser.id);
+                if (otherUsers.length === 0) {
+                    showNotification('没有其他用户，无法生成交易记录', 'error');
+                    return;
+                }
+                
+                const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
+                
+                // 随机决定是收入还是支出
+                const isIncome = Math.random() > 0.5;
+                const fromUserId = isIncome ? randomUser.id : AppState.currentUser.id;
+                const toUserId = isIncome ? AppState.currentUser.id : randomUser.id;
+                
+                // 随机金额 (10-500)
+                const amount = Math.floor(Math.random() * 490) + 10;
+                
+                // 随机描述
+                const description = descriptions[Math.floor(Math.random() * descriptions.length)];
+                
+                // 随机时间 (过去30天内)
+                const timestamp = new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000));
+                
+                const transaction = {
+                    id: Date.now() + i,
+                    fromUserId,
+                    toUserId,
+                    amount,
+                    description,
+                    timestamp
+                };
+                
+                AppState.transactions.push(transaction);
+            }
+            
+            saveData();
+            updateUI();
+            showNotification(`已生成 ${count} 条交易记录`, 'success');
+        }
+
+        // 清除所有交易记录
+        function clearTransactions() {
+            if (confirm('确定要清除所有交易记录吗？此操作不可撤销。')) {
+                AppState.transactions = [];
+                saveData();
+                updateUI();
+                showNotification('已清除所有交易记录', 'success');
+            }
+        }
+
+        // 导出数据
+        function exportData() {
+            const data = {
+                version: DATA_VERSION,
+                timestamp: new Date().toISOString(),
+                users: AppState.users,
+                transactions: AppState.transactions
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'wallet_data_' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification('数据已导出', 'success');
+        }
+
+        // 导入数据
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = event => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        
+                        if (data.users && data.transactions) {
+                            if (confirm('导入数据将覆盖当前所有数据，确定要继续吗？')) {
+                                AppState.users = data.users;
+                                AppState.transactions = data.transactions;
+                                saveData();
+                                updateUI();
+                                updateDevPanel();
+                                showNotification('数据导入成功', 'success');
+                            }
+                        } else {
+                            showNotification('无效的数据文件', 'error');
+                        }
+                    } catch (error) {
+                        showNotification('解析数据文件时出错: ' + error.message, 'error');
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        // 重置所有数据
+        function resetAllData() {
+            if (confirm('确定要重置所有数据吗？这将清除所有用户和交易记录，并恢复为初始状态。此操作不可撤销。')) {
+                localStorage.removeItem('walletUsers');
+                localStorage.removeItem('walletTransactions');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('onlineUsers');
+                localStorage.removeItem('walletData_backup');
+                
+                // 重新加载页面
+                location.reload();
+            }
+        }
+
+        // 显示认证界面
+        function showAuth() {
+            elements.authSection.classList.remove('hidden');
+            elements.appSection.classList.add('hidden');
+            elements.loginForm.classList.remove('hidden');
+            elements.registerForm.classList.add('hidden');
+        }
+
+        // 显示注册表单
+        function showRegisterForm(e) {
+            e.preventDefault();
+            elements.loginForm.classList.add('hidden');
+            elements.registerForm.classList.remove('hidden');
+        }
+
+        // 显示登录表单
+        function showLoginForm(e) {
+            e.preventDefault();
+            elements.registerForm.classList.add('hidden');
+            elements.loginForm.classList.remove('hidden');
+        }
+
+        // 显示应用主界面
+        function showApp() {
+            elements.authSection.classList.add('hidden');
+            elements.appSection.classList.remove('hidden');
+            elements.logoutBtn.classList.remove('hidden');
+            updateUI();
+        }
+
+        // 登录功能
+        function login() {
+            if (isProcessing) {
+                showNotification('请等待当前操作完成', 'error');
+                return;
+            }
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                showNotification('请输入用户名和密码', 'error');
+                return;
+            }
+            
+            isProcessing = true;
+            elements.doLogin.disabled = true;
+            
+            ServerMock.loginUser(username, password).then(result => {
+                isProcessing = false;
+                elements.doLogin.disabled = false;
+                
+                if (result.success) {
+                    AppState.currentUser = result.user;
+                    localStorage.setItem('currentUser', JSON.stringify(result.user));
+                    showApp();
+                    showNotification(`欢迎回来，${result.user.username}！`, 'success');
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            }).catch(error => {
+                isProcessing = false;
+                elements.doLogin.disabled = false;
+                showNotification('登录失败，请重试', 'error');
+                console.error('登录错误:', error);
+            });
+        }
+
+        // 注册功能
+        function register() {
+            if (isProcessing) {
+                showNotification('请等待当前操作完成', 'error');
+                return;
+            }
+            
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!username || !password) {
+                showNotification('请输入用户名和密码', 'error');
+                return;
+            }
+            
+            if (username.length < 3) {
+                showNotification('用户名至少需要3个字符', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showNotification('密码至少需要6个字符', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showNotification('两次输入的密码不一致', 'error');
+                return;
+            }
+            
+            isProcessing = true;
+            elements.doRegister.disabled = true;
+            
+            ServerMock.registerUser(username, password).then(result => {
+                isProcessing = false;
+                elements.doRegister.disabled = false;
+                
+                if (result.success) {
+                    showNotification('注册成功，请登录', 'success');
+                    showLoginForm({ preventDefault: () => {} });
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            }).catch(error => {
+                isProcessing = false;
+                elements.doRegister.disabled = false;
+                showNotification('注册失败，请重试', 'error');
+                console.error('注册错误:', error);
+            });
+        }
+
+        // 退出登录
+        function logout() {
+            if (AppState.currentUser) {
+                ServerMock.logoutUser(AppState.currentUser.id).then(() => {
+                    AppState.currentUser = null;
+                    localStorage.removeItem('currentUser');
+                    showAuth();
+                    showNotification('已成功退出登录', 'info');
+                });
+            }
+        }
+
+        // 转账功能
+        function transfer() {
+            if (isProcessing) {
+                showNotification('请等待当前操作完成', 'error');
+                return;
+            }
+            
+            const recipientId = parseInt(elements.recipient.value);
+            const amount = parseFloat(elements.amount.value);
+            const description = elements.description.value.trim();
+            
+            if (!recipientId) {
+                showNotification('请选择收款人', 'error');
+                return;
+            }
+            
+            if (!amount || amount <= 0 || isNaN(amount)) {
+                showNotification('请输入有效的转账金额', 'error');
+                return;
+            }
+            
+            if (amount > AppState.currentUser.balance) {
+                showNotification('余额不足', 'error');
+                return;
+            }
+            
+            if (!description) {
+                showNotification('请输入转账备注', 'error');
+                return;
+            }
+            
+            isProcessing = true;
+            elements.doTransfer.disabled = true;
+            
+            ServerMock.transferMoney(AppState.currentUser.id, recipientId, amount, description).then(result => {
+                isProcessing = false;
+                elements.doTransfer.disabled = false;
+                
+                if (result.success) {
+                    // 更新当前用户余额
+                    AppState.currentUser.balance -= amount;
+                    localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
+                    
+                    // 更新UI
+                    updateUI();
+                    
+                    // 清空表单
+                    elements.amount.value = '';
+                    elements.description.value = '';
+                    
+                    showNotification('转账成功', 'success');
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            }).catch(error => {
+                isProcessing = false;
+                elements.doTransfer.disabled = false;
+                showNotification('转账失败，请重试', 'error');
+                console.error('转账错误:', error);
+            });
+        }
+
+        // 更新用户界面
+        function updateUI() {
+            if (!AppState.currentUser) return;
+            
+            // 更新用户信息
+            elements.currentUsername.textContent = AppState.currentUser.username;
+            elements.userAvatar.textContent = AppState.currentUser.username.charAt(0).toUpperCase();
+            elements.currentBalance.textContent = `¥ ${AppState.currentUser.balance.toFixed(2)}`;
+            
+            if (AppState.currentUser.balance >= 0) {
+                elements.currentBalance.className = 'balance positive';
+            } else {
+                elements.currentBalance.className = 'balance negative';
+            }
+            
+            // 更新统计信息
+            updateStats();
+            
+            // 更新用户列表
+            updateUserList();
+            
+            // 更新收款人下拉列表
+            updateRecipientList();
+            
+            // 更新交易记录
+            updateTransactionList();
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            // 总余额
+            const totalBalance = AppState.users.reduce((sum, user) => sum + user.balance, 0);
+            elements.totalBalance.textContent = `¥ ${totalBalance.toFixed(2)}`;
+            
+            // 本月收入和支出
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            
+            const monthTransactions = AppState.transactions.filter(t => {
+                const transactionDate = new Date(t.timestamp);
+                return transactionDate.getMonth() === currentMonth && 
+                       transactionDate.getFullYear() === currentYear;
+            });
+            
+            const totalIncome = monthTransactions
+                .filter(t => t.toUserId === AppState.currentUser.id)
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const totalExpense = monthTransactions
+                .filter(t => t.fromUserId === AppState.currentUser.id)
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            elements.totalIncome.textContent = `¥ ${totalIncome.toFixed(2)}`;
+            elements.totalExpense.textContent = `¥ ${totalExpense.toFixed(2)}`;
+        }
+
+        // 更新用户列表
+        function updateUserList() {
+            elements.userList.innerHTML = '';
+            elements.userCount.textContent = AppState.users.length;
+            
+            AppState.users.forEach(user => {
+                if (user.id === AppState.currentUser.id) return;
+                
+                const li = document.createElement('li');
+                li.className = 'user-item';
+                
+                const isOnline = AppState.onlineUsers.includes(user.id);
+                
+                li.innerHTML = `
+                    <div class="user-info">
+                        <div class="user-avatar">${user.username.charAt(0).toUpperCase()}</div>
+                        <div class="user-details">
+                            <div class="user-name">${user.username} ${isOnline ? '<span class="online-badge">在线</span>' : ''}</div>
+                            <div class="user-status">余额: ¥ ${user.balance.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+                
+                elements.userList.appendChild(li);
+            });
+        }
+
+        // 更新收款人下拉列表
+        function updateRecipientList() {
+            elements.recipient.innerHTML = '<option value="">请选择收款人</option>';
+            
+            AppState.users.forEach(user => {
+                if (user.id === AppState.currentUser.id) return;
+                
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.username} (¥ ${user.balance.toFixed(2)})`;
+                
+                elements.recipient.appendChild(option);
+            });
+        }
+
+        // 更新交易记录
+        function updateTransactionList() {
+            elements.transactionList.innerHTML = '';
+            
+            const userTransactions = AppState.transactions.filter(t => 
+                t.fromUserId === AppState.currentUser.id || t.toUserId === AppState.currentUser.id
+            );
+            
+            userTransactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            userTransactions.forEach(transaction => {
+                const isIncome = transaction.toUserId === AppState.currentUser.id;
+                const otherUser = AppState.users.find(u => 
+                    u.id === (isIncome ? transaction.fromUserId : transaction.toUserId)
+                );
+                
+                const li = document.createElement('li');
+                li.className = `transaction-item ${isIncome ? 'income' : 'expense'}`;
+                
+                li.innerHTML = `
+                    <div>
+                        <div>${isIncome ? '从' : '向'} ${otherUser.username} ${isIncome ? '收款' : '付款'}</div>
+                        <div style="font-size: 0.9rem; color: #666;">${transaction.description}</div>
+                        <div style="font-size: 0.8rem; color: #999;">${formatDate(transaction.timestamp)}</div>
+                    </div>
+                    <div class="transaction-amount ${isIncome ? 'income' : 'expense'}">
+                        ${isIncome ? '+' : '-'}¥ ${transaction.amount.toFixed(2)}
+                    </div>
+                `;
+                
+                elements.transactionList.appendChild(li);
+            });
+        }
+
+        // 过滤交易记录
+        function filterTransactions() {
+            const searchTerm = elements.searchTransaction.value.toLowerCase();
+            const transactions = elements.transactionList.querySelectorAll('li');
+            
+            transactions.forEach(transaction => {
+                const text = transaction.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    transaction.style.display = 'flex';
+                } else {
+                    transaction.style.display = 'none';
+                }
+            });
+        }
+
+        // 格式化日期
+        function formatDate(date) {
+            const d = new Date(date);
+            return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        // 保存数据到本地存储
+        function saveData() {
+            try {
+                const dataToSave = {
+                    version: DATA_VERSION,
+                    timestamp: new Date().toISOString(),
+                    users: AppState.users,
+                    transactions: AppState.transactions,
+                    onlineUsers: AppState.onlineUsers
+                };
+                
+                localStorage.setItem('walletUsers', JSON.stringify(AppState.users));
+                localStorage.setItem('walletTransactions', JSON.stringify(AppState.transactions));
+                localStorage.setItem('onlineUsers', JSON.stringify(AppState.onlineUsers));
+                
+                // 创建备份
+                localStorage.setItem('walletData_backup', JSON.stringify(dataToSave));
+                
+            } catch (error) {
+                console.error('保存数据时出错:', error);
+                showNotification('保存数据失败', 'error');
+            }
+            
+            if (AppState.currentUser) {
+                const updatedUser = AppState.users.find(u => u.id === AppState.currentUser.id);
+                if (updatedUser) {
+                    AppState.currentUser = updatedUser;
+                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                }
+            }
+        }
+
+        // 初始化应用
+        initApp();
+    </script>
+</body>
+</html>
